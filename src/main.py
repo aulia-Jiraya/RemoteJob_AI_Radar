@@ -35,7 +35,8 @@ def main() -> None:
 
     min_score = int(scoring_cfg.get("min_score", 75))
     max_cards = int(scoring_cfg.get("max_cards_per_run", 8))
-    batch_size = int(scoring_cfg.get("batch_size", 12))
+    max_candidates = int(scoring_cfg.get("max_candidates_per_run", 60))
+    batch_size = int(scoring_cfg.get("batch_size", 6))
     retention_days = int(scoring_cfg.get("state_retention_days", 30))
 
     state = JobStateStore(STATE_PATH, retention_days=retention_days)
@@ -69,13 +70,14 @@ def main() -> None:
 
         logger.info("Raw: %d | Unique new jobs: %d", len(raw_jobs), len(unique_new))
 
-        # 3. Pre-filter regex lokal
+        # 3. Pre-filter regex lokal (judul + deskripsi)
         candidates: list[JobItem] = []
+        title_patterns = prefilter_cfg.get("title_include_patterns", [])
         include_patterns = prefilter_cfg.get("include_patterns", [])
         exclude_patterns = prefilter_cfg.get("exclude_patterns", [])
 
         for job in unique_new:
-            if passes_prefilter(job, include_patterns, exclude_patterns):
+            if passes_prefilter(job, include_patterns, exclude_patterns, title_patterns):
                 candidates.append(job)
             else:
                 state.mark_seen(job.url)
@@ -92,6 +94,16 @@ def main() -> None:
             send_telegram_status(summary, client)
             logger.info("No matching candidates this cycle. State saved.")
             return
+
+        # Batasi kandidat per siklus agar selesai cepat & tidak pernah timeout
+        total_candidates = len(candidates)
+        if total_candidates > max_candidates:
+            logger.info(
+                "Capping candidates from %d to %d for this cycle (sisanya diproses siklus berikutnya).",
+                total_candidates,
+                max_candidates,
+            )
+            candidates = candidates[:max_candidates]
 
         # 4. Smart Fetch (HTML -> Markdown via Trafilatura, fallback ke snippet)
         enriched: list[JobItem] = [enrich_job_description(job, client) for job in candidates]
@@ -120,7 +132,7 @@ def main() -> None:
             "🛰️ <b>RemoteJob AI Radar — Laporan Siklus</b>\n"
             f"🟢 <b>Koneksi LLM:</b> <code>{html.escape(llm_status)}</code>\n"
             f"🧠 <b>Model Scoring:</b> <code>{html.escape(last_model)}</code>\n"
-            f"🔎 <b>Dipindai:</b> {len(raw_jobs)} raw | {len(candidates)} lolos filter | <b>{len(matched_pairs)} cocok (skor ≥ {min_score})</b>"
+            f"🔎 <b>Dipindai:</b> {len(raw_jobs)} raw | {len(candidates)}/{total_candidates} diproses | <b>{len(matched_pairs)} cocok (skor ≥ {min_score})</b>"
         )
         send_telegram_status(summary, client)
 
