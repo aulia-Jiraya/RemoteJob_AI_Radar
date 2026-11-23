@@ -28,7 +28,9 @@ def _strip_json_fences(raw_text: str) -> str:
     text = raw_text.strip()
     match = re.search(r"```(?:json)?\s*(.*?)\s*```", text, flags=re.DOTALL | re.IGNORECASE)
     if match:
-        return match.group(1).strip()
+        text = match.group(1).strip()
+    # Hapus trailing comma sebelum ] atau } yang sering muncul dari model ringan
+    text = re.sub(r",\s*([\]}])", r"\1", text)
     return text
 
 

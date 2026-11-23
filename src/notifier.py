@@ -24,7 +24,9 @@ def send_telegram_status(message_html: str, client: httpx.Client) -> bool:
     }
     try:
         resp = client.post(endpoint, json=payload, timeout=15.0)
-        resp.raise_for_status()
+        if resp.status_code != 200:
+            logger.error("Telegram API error (%s): %s", resp.status_code, resp.text)
+            return False
         return True
     except Exception as exc:
         logger.error("Failed to send Telegram status report: %s", exc)
@@ -86,8 +88,10 @@ def send_telegram_cards(
         }
         try:
             resp = client.post(endpoint, json=payload, timeout=15.0)
-            resp.raise_for_status()
-            sent_count += 1
+            if resp.status_code != 200:
+                logger.error("Telegram card error (%s) for %s: %s", resp.status_code, job.url, resp.text)
+            else:
+                sent_count += 1
             time.sleep(0.6)
         except Exception as exc:
             logger.error("Failed to send Telegram card for %s: %s", job.url, exc)

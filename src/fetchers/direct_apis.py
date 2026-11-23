@@ -8,7 +8,7 @@ from src.models import JobItem
 logger = logging.getLogger(__name__)
 
 DEFAULT_HEADERS = {
-    "User-Agent": "RemoteJob_AI_Radar/1.0 (+[https://github.com](https://github.com))",
+    "User-Agent": "RemoteJob_AI_Radar/1.0 (+https://github.com)",
     "Accept": "application/json, application/xml, text/xml;q=0.9, */*;q=0.8",
 }
 
@@ -21,7 +21,7 @@ def _make_id(prefix: str, url: str) -> str:
 def fetch_remotive(client: httpx.Client) -> list[JobItem]:
     jobs: list[JobItem] = []
     try:
-        resp = client.get("[https://remotive.com/api/remote-jobs?limit=60](https://remotive.com/api/remote-jobs?limit=60)", headers=DEFAULT_HEADERS, timeout=20.0)
+        resp = client.get("https://remotive.com/api/remote-jobs?limit=60", headers=DEFAULT_HEADERS, timeout=20.0)
         resp.raise_for_status()
         for item in resp.json().get("jobs", []):
             url = item.get("url", "")
@@ -48,7 +48,7 @@ def fetch_remotive(client: httpx.Client) -> list[JobItem]:
 def fetch_arbeitnow(client: httpx.Client) -> list[JobItem]:
     jobs: list[JobItem] = []
     try:
-        resp = client.get("[https://www.arbeitnow.com/api/job-board-api](https://www.arbeitnow.com/api/job-board-api)", headers=DEFAULT_HEADERS, timeout=20.0)
+        resp = client.get("https://www.arbeitnow.com/api/job-board-api", headers=DEFAULT_HEADERS, timeout=20.0)
         resp.raise_for_status()
         for item in resp.json().get("data", []):
             if not item.get("remote", False):
@@ -76,7 +76,7 @@ def fetch_arbeitnow(client: httpx.Client) -> list[JobItem]:
 def fetch_remoteok(client: httpx.Client) -> list[JobItem]:
     jobs: list[JobItem] = []
     try:
-        resp = client.get("[https://remoteok.com/api](https://remoteok.com/api)", headers=DEFAULT_HEADERS, timeout=20.0)
+        resp = client.get("https://remoteok.com/api", headers=DEFAULT_HEADERS, timeout=20.0)
         resp.raise_for_status()
         data = resp.json()
         for item in data:
@@ -84,7 +84,7 @@ def fetch_remoteok(client: httpx.Client) -> list[JobItem]:
                 continue
             url = item["url"]
             if url.startswith("/"):
-                url = f"[https://remoteok.com](https://remoteok.com){url}"
+                url = f"https://remoteok.com{url}"
             sal_min = item.get("salary_min")
             sal_max = item.get("salary_max")
             salary = f"${sal_min:,} - ${sal_max:,}" if sal_min and sal_max else "Not specified"
@@ -108,7 +108,7 @@ def fetch_remoteok(client: httpx.Client) -> list[JobItem]:
 
 def fetch_weworkremotely(client: httpx.Client) -> list[JobItem]:
     jobs: list[JobItem] = []
-    rss_url = "[https://weworkremotely.com/categories/remote-programming-jobs.rss](https://weworkremotely.com/categories/remote-programming-jobs.rss)"
+    rss_url = "https://weworkremotely.com/categories/remote-programming-jobs.rss"
     try:
         resp = client.get(rss_url, headers=DEFAULT_HEADERS, timeout=20.0)
         resp.raise_for_status()
@@ -142,17 +142,17 @@ def fetch_weworkremotely(client: httpx.Client) -> list[JobItem]:
 def fetch_hackernews_jobs(client: httpx.Client, limit: int = 25) -> list[JobItem]:
     jobs: list[JobItem] = []
     try:
-        ids_resp = client.get("[https://hacker-news.firebaseio.com/v0/jobstories.json](https://hacker-news.firebaseio.com/v0/jobstories.json)", timeout=15.0)
+        ids_resp = client.get("https://hacker-news.firebaseio.com/v0/jobstories.json", timeout=15.0)
         ids_resp.raise_for_status()
         story_ids = ids_resp.json()[:limit]
         for sid in story_ids:
             try:
-                item_resp = client.get(f"[https://hacker-news.firebaseio.com/v0/item/](https://hacker-news.firebaseio.com/v0/item/){sid}.json", timeout=10.0)
+                item_resp = client.get(f"https://hacker-news.firebaseio.com/v0/item/{sid}.json", timeout=10.0)
                 if item_resp.status_code != 200:
                     continue
                 item = item_resp.json() or {}
                 title = item.get("title", "")
-                url = item.get("url") or f"[https://news.ycombinator.com/item?id=](https://news.ycombinator.com/item?id=){sid}"
+                url = item.get("url") or f"https://news.ycombinator.com/item?id={sid}"
                 if not title:
                     continue
                 jobs.append(
@@ -177,7 +177,7 @@ def fetch_hackernews_jobs(client: httpx.Client, limit: int = 25) -> list[JobItem
 def fetch_greenhouse_boards(client: httpx.Client, slugs: list[str]) -> list[JobItem]:
     jobs: list[JobItem] = []
     for slug in slugs:
-        api_url = f"[https://boards-api.greenhouse.io/v1/boards/](https://boards-api.greenhouse.io/v1/boards/){slug}/jobs?content=true"
+        api_url = f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true"
         try:
             resp = client.get(api_url, headers=DEFAULT_HEADERS, timeout=15.0)
             if resp.status_code == 404:
@@ -209,7 +209,7 @@ def fetch_greenhouse_boards(client: httpx.Client, slugs: list[str]) -> list[JobI
 def fetch_lever_boards(client: httpx.Client, slugs: list[str]) -> list[JobItem]:
     jobs: list[JobItem] = []
     for slug in slugs:
-        api_url = f"[https://api.lever.co/v0/postings/](https://api.lever.co/v0/postings/){slug}?mode=json"
+        api_url = f"https://api.lever.co/v0/postings/{slug}?mode=json"
         try:
             resp = client.get(api_url, headers=DEFAULT_HEADERS, timeout=15.0)
             if resp.status_code == 404:
