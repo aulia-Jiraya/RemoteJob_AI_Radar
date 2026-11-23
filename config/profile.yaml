@@ -1,30 +1,36 @@
 candidate:
-  title: "AI Systems Engineer | Local-First RAG & Context Engineering Specialist"
+  title: "Full-Stack AI & Applied LLM Engineer | RAG, AI Agents & Automation Specialist"
   work_preference: "100% Remote Global (Async / Worldwide) - Full-time, Contract, or Freelance"
   timezone_note: "Based in Indonesia (WIB / UTC+7), comfortable with async global teams and APAC/EU/US overlap."
   core_skills:
-    - name: "AI Systems Engineering / AI Application Architecture"
-      detail: "Designing, integrating, and optimizing AI software components (data extraction, embedding, vector store, LLM runtime) efficiently within bounded compute constraints."
-    - name: "Local-First RAG Pipeline Development"
-      detail: "Private document parsing & ingestion, on-device/local vector databases, and context augmentation without absolute cloud dependency."
-    - name: "Context Engineering & LLM Orchestration"
-      detail: "Preparing clean Markdown context, optimal chunking (3-5 chunks), prompt/tool orchestration, and efficient inference window utilization."
+    # --- 3 SKILL UTAMA ASLI (TIDAK DIUBAH) ---
+    - name: "Full-Stack AI Web Development"
+      detail: "End-to-end AI web apps using Python (FastAPI), TypeScript/Next.js, streaming LLM UIs, and REST/OpenAI-compatible APIs."
+    - name: "Applied RAG & Document Intelligence"
+      detail: "Automated document ingestion, semantic search, and knowledge base chatbots for enterprise workflows."
+    - name: "Workflow Automation & AI Agents"
+      detail: "Connecting LLMs with internal APIs, webhooks, and automated data pipelines."
+    # --- 3 SKILL PENDAMPING SETARA (PERLUASAN CAKUPAN) ---
+    - name: "LLM API Integration & AI Product Engineering"
+      detail: "Integrating OpenAI, Anthropic, and Gemini APIs into production web apps with structured JSON outputs, function calling, and low-latency streaming."
+    - name: "Conversational AI & Enterprise Knowledge Assistants"
+      detail: "Building context-aware chatbots, hybrid semantic search, and automated document Q&A over PDFs, internal wikis, and databases."
+    - name: "AI-Powered Business Process Automation & Solutions"
+      detail: "Developing custom Python/webhook automations, Telegram/Slack AI bots, and API orchestration pipelines for operational efficiency."
 
 scoring:
-  min_score: 75
+  min_score: 72
   max_cards_per_run: 8
   max_candidates_per_run: 60
   batch_size: 6
   state_retention_days: 30
 
 prefilter:
-  # Judul lowongan wajib mengandung minimal 1 kata kunci posisi AI/ML/Engineering berikut
+  # Diperluas agar judul dengan istilah setara (openai, chatbot, automation, integration, dll.) tidak terbuang
   title_include_patterns:
-    - "\\b(ai|llm|rag|genai|generative|machine learning|ml|nlp|agent|agentic|prompt|forward deployed|applied scientist|research engineer|research scientist|inference|embedding|vector|model|context)\\b"
-  # Deskripsi/judul wajib mengandung minimal 1 pola teknis berikut
+    - "\\b(ai|llm|rag|genai|generative|machine learning|ml|nlp|agent|agentic|prompt|forward deployed|applied scientist|inference|embedding|vector|model|context|openai|anthropic|gemini|langchain|chatbot|conversational|automation|integration)\\b"
   include_patterns:
-    - "\\b(ai|llm|rag|genai|generative ai|agentic|ai agent|langchain|llamaindex|vector|embedding|ollama|vllm|context engineering|prompt engineer|nlp|mlops|ai engineer|ai architect|ai systems)\\b"
-  # Buang lowongan yang secara eksplisit mewajibkan izin kerja/domisili tertutup
+    - "\\b(ai|llm|rag|genai|generative ai|agentic|ai agent|langchain|llamaindex|vector|embedding|ollama|vllm|context engineering|prompt engineer|nlp|mlops|ai engineer|ai architect|ai systems|openai|anthropic|fastapi|chatbot|semantic search|webhook|automation)\\b"
   exclude_patterns:
     - "\\b(us citizens? only|must reside in the us|us work authorization required|security clearance required|on-site only|onsite only)\\b"
 
@@ -47,8 +53,8 @@ search_dorking:
   max_results_per_query: 8
   delay_seconds: 2.0
   queries:
-    - 'site:boards.greenhouse.io ("AI Engineer" OR "LLM" OR "RAG") ("remote" OR "worldwide")'
-    - 'site:jobs.lever.co ("AI Engineer" OR "LLM" OR "RAG") ("remote" OR "anywhere")'
-    - 'site:apply.workable.com ("AI Engineer" OR "LLM" OR "RAG" OR "Generative AI") "remote"'
-    - 'site:jobs.smartrecruiters.com ("AI Engineer" OR "LLM" OR "RAG") "remote"'
-    - '(site:glints.com OR site:kalibrr.com OR site:id.jobstreet.com) ("AI Engineer" OR "LLM" OR "RAG" OR "Generative AI") ("remote" OR "WFH")'
+    - 'site:boards.greenhouse.io ("AI Engineer" OR "LLM" OR "RAG" OR "AI Integration") ("remote" OR "worldwide")'
+    - 'site:jobs.lever.co ("AI Engineer" OR "LLM" OR "RAG" OR "Automation") ("remote" OR "anywhere")'
+    - 'site:apply.workable.com ("AI Engineer" OR "LLM" OR "RAG" OR "Generative AI" OR "Chatbot") "remote"'
+    - 'site:jobs.smartrecruiters.com ("AI Engineer" OR "LLM" OR "RAG" OR "Generative AI") "remote"'
+    - '(site:glints.com OR site:kalibrr.com OR site:id.jobstreet.com) ("AI Engineer" OR "LLM" OR "RAG" OR "Generative AI" OR "Python AI") ("remote" OR "WFH")'
