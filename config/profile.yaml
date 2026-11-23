@@ -13,11 +13,15 @@ candidate:
 scoring:
   min_score: 75
   max_cards_per_run: 8
-  batch_size: 12
+  max_candidates_per_run: 60
+  batch_size: 6
   state_retention_days: 30
 
 prefilter:
-  # Lowongan harus mengandung minimal 1 pola dari include_patterns
+  # Judul lowongan wajib mengandung minimal 1 kata kunci posisi AI/ML/Engineering berikut
+  title_include_patterns:
+    - "\\b(ai|llm|rag|genai|generative|machine learning|ml|nlp|agent|agentic|prompt|forward deployed|applied scientist|research engineer|research scientist|inference|embedding|vector|model|context)\\b"
+  # Deskripsi/judul wajib mengandung minimal 1 pola teknis berikut
   include_patterns:
     - "\\b(ai|llm|rag|genai|generative ai|agentic|ai agent|langchain|llamaindex|vector|embedding|ollama|vllm|context engineering|prompt engineer|nlp|mlops|ai engineer|ai architect|ai systems)\\b"
   # Buang lowongan yang secara eksplisit mewajibkan izin kerja/domisili tertutup
@@ -30,19 +34,13 @@ direct_sources:
   enable_remoteok: true
   enable_weworkremotely: true
   enable_hackernews: true
-  # Slug publik Greenhouse & Lever (skrip otomatis melewati slug jika 404; silakan tambah/ubah daftar perusahaan target Anda)
   greenhouse_boards:
     - "anthropic"
     - "scaleai"
     - "airtable"
     - "gitlab"
     - "vercel"
-    - "zapier"
-    - "dbtlabs"
-  lever_boards:
-    - "mistral"
-    - "cohere"
-    - "weightsandbiases"
+  lever_boards: []
 
 search_dorking:
   enabled: true
