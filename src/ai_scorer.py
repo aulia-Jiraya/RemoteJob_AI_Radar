@@ -29,7 +29,6 @@ def _strip_json_fences(raw_text: str) -> str:
     match = re.search(r"```(?:json)?\s*(.*?)\s*```", text, flags=re.DOTALL | re.IGNORECASE)
     if match:
         text = match.group(1).strip()
-    # Hapus trailing comma sebelum ] atau } yang sering muncul dari model ringan
     text = re.sub(r",\s*([\]}])", r"\1", text)
     return text
 
@@ -50,14 +49,14 @@ def _call_openai_compat(
     payload: dict = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.2,
+        "temperature": 0.1,
     }
     if expect_json:
         payload["response_format"] = {"type": "json_object"}
     if max_tokens is not None:
         payload["max_tokens"] = max_tokens
 
-    resp = client.post(api_url, headers=headers, json=payload, timeout=45.0)
+    resp = client.post(api_url, headers=headers, json=payload, timeout=75.0)
     resp.raise_for_status()
     data = resp.json()
     return data["choices"][0]["message"]["content"]
@@ -111,7 +110,7 @@ def _build_prompt(profile: dict, batch: list[JobItem]) -> str:
             "location": j.location,
             "salary_hint": j.salary,
             "url": j.url,
-            "description": j.description[:2800],
+            "description": j.description[:2500],
         }
         for j in batch
     ]
@@ -162,7 +161,7 @@ def score_jobs_in_batches(
     jobs: list[JobItem],
     profile: dict,
     client: httpx.Client,
-    batch_size: int = 12,
+    batch_size: int = 6,
     preferred_model: str | None = None,
 ) -> tuple[dict[str, ScoredJob], set[str], str]:
     """Returns (scored_map, processed_job_ids, last_used_model)."""
@@ -207,7 +206,7 @@ def score_jobs_in_batches(
                     success = True
                     break
                 except Exception as exc:
-                    wait_sec = 10 * attempt
+                    wait_sec = 8 * attempt
                     logger.warning(
                         "Batch #%d model=%s attempt=%d failed (%s). Retrying in %ds...",
                         batch_num,
@@ -225,6 +224,6 @@ def score_jobs_in_batches(
             logger.error("Batch #%d failed on all models; jobs left unmarked for next cycle.", batch_num)
 
         if start + batch_size < len(jobs):
-            time.sleep(5.0)
+            time.sleep(3.0)
 
     return scored_map, processed_ids, last_used_model
