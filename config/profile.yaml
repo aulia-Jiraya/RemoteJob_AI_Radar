@@ -1,0 +1,56 @@
+candidate:
+  title: "AI Systems Engineer | Local-First RAG & Context Engineering Specialist"
+  work_preference: "100% Remote Global (Async / Worldwide) - Full-time, Contract, or Freelance"
+  timezone_note: "Based in Indonesia (WIB / UTC+7), comfortable with async global teams and APAC/EU/US overlap."
+  core_skills:
+    - name: "AI Systems Engineering / AI Application Architecture"
+      detail: "Designing, integrating, and optimizing AI software components (data extraction, embedding, vector store, LLM runtime) efficiently within bounded compute constraints."
+    - name: "Local-First RAG Pipeline Development"
+      detail: "Private document parsing & ingestion, on-device/local vector databases, and context augmentation without absolute cloud dependency."
+    - name: "Context Engineering & LLM Orchestration"
+      detail: "Preparing clean Markdown context, optimal chunking (3-5 chunks), prompt/tool orchestration, and efficient inference window utilization."
+
+scoring:
+  min_score: 75
+  max_cards_per_run: 8
+  batch_size: 12
+  state_retention_days: 30
+
+prefilter:
+  # Lowongan harus mengandung minimal 1 pola dari include_patterns
+  include_patterns:
+    - "\\b(ai|llm|rag|genai|generative ai|agentic|ai agent|langchain|llamaindex|vector|embedding|ollama|vllm|context engineering|prompt engineer|nlp|mlops|ai engineer|ai architect|ai systems)\\b"
+  # Buang lowongan yang secara eksplisit mewajibkan izin kerja/domisili tertutup
+  exclude_patterns:
+    - "\\b(us citizens? only|must reside in the us|us work authorization required|security clearance required|on-site only|onsite only)\\b"
+
+direct_sources:
+  enable_remotive: true
+  enable_arbeitnow: true
+  enable_remoteok: true
+  enable_weworkremotely: true
+  enable_hackernews: true
+  # Slug publik Greenhouse & Lever (skrip otomatis melewati slug jika 404; silakan tambah/ubah daftar perusahaan target Anda)
+  greenhouse_boards:
+    - "anthropic"
+    - "scaleai"
+    - "airtable"
+    - "gitlab"
+    - "vercel"
+    - "zapier"
+    - "dbtlabs"
+  lever_boards:
+    - "mistral"
+    - "cohere"
+    - "weightsandbiases"
+
+search_dorking:
+  enabled: true
+  max_results_per_query: 8
+  delay_seconds: 2.0
+  queries:
+    - 'site:boards.greenhouse.io ("AI Engineer" OR "LLM" OR "RAG") ("remote" OR "worldwide")'
+    - 'site:jobs.lever.co ("AI Engineer" OR "LLM" OR "RAG") ("remote" OR "anywhere")'
+    - 'site:apply.workable.com ("AI Engineer" OR "LLM" OR "RAG" OR "Generative AI") "remote"'
+    - 'site:jobs.smartrecruiters.com ("AI Engineer" OR "LLM" OR "RAG") "remote"'
+    - '(site:glints.com OR site:kalibrr.com OR site:id.jobstreet.com) ("AI Engineer" OR "LLM" OR "RAG" OR "Generative AI") ("remote" OR "WFH")'
