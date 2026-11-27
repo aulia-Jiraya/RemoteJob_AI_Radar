@@ -58,3 +58,10 @@ search_dorking:
     - 'site:apply.workable.com ("AI Engineer" OR "LLM" OR "RAG" OR "Generative AI" OR "Chatbot") "remote"'
     - 'site:jobs.smartrecruiters.com ("AI Engineer" OR "LLM" OR "RAG" OR "Generative AI") "remote"'
     - '(site:glints.com OR site:kalibrr.com OR site:id.jobstreet.com) ("AI Engineer" OR "LLM" OR "RAG" OR "Generative AI" OR "Python AI") ("remote" OR "WFH")'
+
+llm:
+  timeout_seconds: 75.0
+  max_retries: 3
+
+scraping:
+  batch_size: 6

@@ -41,6 +41,8 @@ def _call_openai_compat(
     prompt: str,
     expect_json: bool = True,
     max_tokens: int | None = None,
+    max_retries: int = 3,
+    timeout_seconds: float = 75.0,
 ) -> str:
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -56,13 +58,44 @@ def _call_openai_compat(
     if max_tokens is not None:
         payload["max_tokens"] = max_tokens
 
-    resp = client.post(api_url, headers=headers, json=payload, timeout=75.0)
+    for attempt in range(max_retries):
+        resp = client.post(
+            api_url, headers=headers, json=payload, timeout=timeout_seconds
+        )
+        if resp.status_code == 429:
+            # Rate limited — respect Retry-After header if present
+            retry_after = resp.headers.get("Retry-After")
+            try:
+                wait_sec = int(retry_after) if retry_after and retry_after.isdigit() else 30
+            except ValueError:
+                wait_sec = 30
+            if attempt < max_retries - 1:
+                logger.warning(
+                    "Rate limit (HTTP 429) hit for model=%s (attempt %d/%d). Sleeping %ds (Retry-After: %s).",
+                    model,
+                    attempt + 1,
+                    max_retries,
+                    wait_sec,
+                    retry_after or "header missing",
+                )
+                time.sleep(wait_sec)
+                continue  # retry the same request
+            # Last attempt — let raise_for_status() throw so fallback model can take over
+        resp.raise_for_status()
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
+
+    # Should not reach here (raise_for_status would have thrown), but for type safety:
     resp.raise_for_status()
     data = resp.json()
     return data["choices"][0]["message"]["content"]
 
 
-def check_llm_health(client: httpx.Client) -> tuple[bool, str, str]:
+def check_llm_health(
+    client: httpx.Client,
+    timeout_seconds: float = 75.0,
+    max_retries: int = 3,
+) -> tuple[bool, str, str]:
     """
     Mengecek apakah koneksi ke endpoint LLM berjalan normal.
     Mengembalikan: (is_ok, active_model, status_detail)
@@ -83,6 +116,8 @@ def check_llm_health(client: httpx.Client) -> tuple[bool, str, str]:
                 prompt="Reply with exactly one word: OK",
                 expect_json=False,
                 max_tokens=10,
+                max_retries=max_retries,
+                timeout_seconds=timeout_seconds,
             )
             label = "Primary" if idx == 0 else "Fallback"
             logger.info("LLM Health Check OK (%s: %s) -> %s", label, model, reply.strip())
@@ -163,6 +198,8 @@ def score_jobs_in_batches(
     client: httpx.Client,
     batch_size: int = 6,
     preferred_model: str | None = None,
+    timeout_seconds: float = 75.0,
+    max_retries: int = 3,
 ) -> tuple[dict[str, ScoredJob], set[str], str]:
     """Returns (scored_map, processed_job_ids, last_used_model)."""
     api_key, api_url, primary_model, fallback_model = _get_llm_config()
@@ -192,6 +229,8 @@ def score_jobs_in_batches(
                         model=model,
                         prompt=prompt,
                         expect_json=True,
+                        max_retries=max_retries,
+                        timeout_seconds=timeout_seconds,
                     )
                     cleaned = _strip_json_fences(raw_content)
                     parsed = BatchScoreResponse.model_validate_json(cleaned)

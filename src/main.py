@@ -32,18 +32,25 @@ def main() -> None:
     profile = load_profile()
     scoring_cfg = profile.get("scoring", {})
     prefilter_cfg = profile.get("prefilter", {})
+    llm_cfg = profile.get("llm", {})
+    scraping_cfg = profile.get("scraping", {})
 
     min_score = int(scoring_cfg.get("min_score", 75))
     max_cards = int(scoring_cfg.get("max_cards_per_run", 8))
     max_candidates = int(scoring_cfg.get("max_candidates_per_run", 60))
-    batch_size = int(scoring_cfg.get("batch_size", 6))
+    batch_size = int(scraping_cfg.get("batch_size", scoring_cfg.get("batch_size", 6)))
     retention_days = int(scoring_cfg.get("state_retention_days", 30))
+
+    llm_timeout = float(llm_cfg.get("timeout_seconds", 75.0))
+    llm_max_retries = int(llm_cfg.get("max_retries", 3))
 
     state = JobStateStore(STATE_PATH, retention_days=retention_days)
 
     with httpx.Client() as client:
         # 0. Health Check Koneksi Endpoint LLM sebelum mulai
-        llm_ok, active_model, llm_status = check_llm_health(client)
+        llm_ok, active_model, llm_status = check_llm_health(
+            client, timeout_seconds=llm_timeout, max_retries=llm_max_retries
+        )
         if not llm_ok:
             alert = (
                 "🚨 <b>RemoteJob AI Radar — LLM Endpoint GAGAL</b>\n"
@@ -106,7 +113,15 @@ def main() -> None:
             candidates = candidates[:max_candidates]
 
         # 4. Smart Fetch (HTML -> Markdown via Trafilatura, fallback ke snippet)
-        enriched: list[JobItem] = [enrich_job_description(job, client) for job in candidates]
+        # Wrap per-job agar satu crash tidak menghentikan seluruh enrichment
+        enriched: list[JobItem] = []
+        for job in candidates:
+            try:
+                enriched_job = enrich_job_description(job, client)
+                enriched.append(enriched_job)
+            except Exception as exc:
+                logger.warning("Enrichment failed for %s (%s); using original snippet.", job.url, exc)
+                enriched.append(job)  # gunakan job dengan description asli
 
         # 5. Kurasi & Scoring Batch via Gemini OpenAI-Compatible Endpoint (dengan Fallback)
         scored_map, processed_ids, last_model = score_jobs_in_batches(
@@ -115,6 +130,8 @@ def main() -> None:
             client=client,
             batch_size=batch_size,
             preferred_model=active_model,
+            timeout_seconds=llm_timeout,
+            max_retries=llm_max_retries,
         )
 
         matched_pairs = []

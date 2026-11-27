@@ -3,6 +3,7 @@ import hashlib
 import logging
 import feedparser
 import httpx
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.models import JobItem
 
 logger = logging.getLogger(__name__)
@@ -145,30 +146,41 @@ def fetch_hackernews_jobs(client: httpx.Client, limit: int = 25) -> list[JobItem
         ids_resp = client.get("https://hacker-news.firebaseio.com/v0/jobstories.json", timeout=15.0)
         ids_resp.raise_for_status()
         story_ids = ids_resp.json()[:limit]
-        for sid in story_ids:
+
+        def fetch_story(sid: int) -> JobItem | None:
             try:
-                item_resp = client.get(f"https://hacker-news.firebaseio.com/v0/item/{sid}.json", timeout=10.0)
+                item_resp = client.get(
+                    f"https://hacker-news.firebaseio.com/v0/item/{sid}.json",
+                    timeout=10.0,
+                )
                 if item_resp.status_code != 200:
-                    continue
+                    return None
                 item = item_resp.json() or {}
                 title = item.get("title", "")
                 url = item.get("url") or f"https://news.ycombinator.com/item?id={sid}"
                 if not title:
-                    continue
-                jobs.append(
-                    JobItem(
-                        job_id=_make_id("hn", url),
-                        title=title,
-                        company="YC / Hacker News",
-                        url=url,
-                        source="Hacker News API",
-                        location="Check JD",
-                        description=item.get("text", title),
-                        needs_smart_fetch=True,
-                    )
+                    return None
+                return JobItem(
+                    job_id=_make_id("hn", url),
+                    title=title,
+                    company="YC / Hacker News",
+                    url=url,
+                    source="Hacker News API",
+                    location="Check JD",
+                    description=item.get("text", title),
+                    needs_smart_fetch=True,
                 )
             except Exception:
-                continue
+                return None
+
+        # Parallel fetch with max 5 concurrent workers
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = {executor.submit(fetch_story, sid): sid for sid in story_ids}
+            for future in as_completed(futures):
+                result = future.result()
+                if result:
+                    jobs.append(result)
+
     except Exception as exc:
         logger.warning("Hacker News fetch failed: %s", exc)
     return jobs

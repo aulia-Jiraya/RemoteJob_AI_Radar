@@ -4,6 +4,7 @@ import logging
 import os
 import time
 import httpx
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from src.models import JobItem
 
 logger = logging.getLogger(__name__)
@@ -55,28 +56,44 @@ def _query_searxng(
     return jobs
 
 
-def _query_ddgs(query: str, max_results: int) -> list[JobItem]:
-    jobs: list[JobItem] = []
-    with DDGS() as ddgs:
-        results = ddgs.text(query, timelimit="d", max_results=max_results) or []
-        for item in results:
-            url = item.get("href") or item.get("url", "")
-            title = item.get("title", "")
-            if not url or not title:
-                continue
-            jobs.append(
-                JobItem(
-                    job_id=_make_id(url),
-                    title=title,
-                    company="Via DDGS",
-                    url=url,
-                    source="DDGS Fallback",
-                    location="Check JD",
-                    description=item.get("body", title),
-                    needs_smart_fetch=True,
+def _query_ddgs(query: str, max_results: int, timeout_sec: float = 15.0) -> list[JobItem]:
+    """
+    Run DDGS search in a thread with explicit timeout.
+    DDGS library doesn't expose timeout, so we enforce it via ThreadPoolExecutor.
+    """
+    def _ddgs_search() -> list[JobItem]:
+        jobs: list[JobItem] = []
+        with DDGS() as ddgs:
+            results = ddgs.text(query, timelimit="d", max_results=max_results) or []
+            for item in results:
+                url = item.get("href") or item.get("url", "")
+                title = item.get("title", "")
+                if not url or not title:
+                    continue
+                jobs.append(
+                    JobItem(
+                        job_id=_make_id(url),
+                        title=title,
+                        company="Via DDGS",
+                        url=url,
+                        source="DDGS Fallback",
+                        location="Check JD",
+                        description=item.get("body", title),
+                        needs_smart_fetch=True,
+                    )
                 )
-            )
-    return jobs
+        return jobs
+
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_ddgs_search)
+            return future.result(timeout=timeout_sec)
+    except FuturesTimeoutError:
+        logger.warning("DDGS search timeout after %.1fs for query: %s", timeout_sec, query)
+        return []
+    except Exception as exc:
+        logger.warning("DDGS search failed for query '%s': %s", query, exc)
+        return []
 
 
 def fetch_all_search_sources(client: httpx.Client, cfg: dict) -> list[JobItem]:
@@ -101,7 +118,7 @@ def fetch_all_search_sources(client: httpx.Client, cfg: dict) -> list[JobItem]:
 
         if not items:
             try:
-                items = _query_ddgs(query, max_results)
+                items = _query_ddgs(query, max_results, timeout_sec=15.0)
                 logger.info("DDGS fallback query #%d returned %d results.", idx + 1, len(items))
             except Exception as exc:
                 logger.warning("DDGS fallback also failed on query #%d: %s", idx + 1, exc)
